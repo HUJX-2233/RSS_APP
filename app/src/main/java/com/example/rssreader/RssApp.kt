@@ -23,7 +23,8 @@ class RssApp : Application() {
  */
 class AppContainer(context: Context) {
     val database: RssDatabase = RssDatabase.build(context)
+    // 仓库额外拿到 database 本体，是为了用 withTransaction 把"加订阅"的三步写库合并成原子操作
     val feedRepository: FeedRepository =
-        FeedRepository(database.feedDao(), database.articleDao(), FeedFetcher())
+        FeedRepository(database, database.feedDao(), database.articleDao(), FeedFetcher())
     val articleRepository: ArticleRepository = ArticleRepository(database.articleDao())
 }

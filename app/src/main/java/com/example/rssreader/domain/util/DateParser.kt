@@ -25,11 +25,32 @@ object DateParser {
         DateTimeFormatter.ofPattern("EEE, d MMM yyyy HH:mm z", Locale.ENGLISH),
     )
 
+    /**
+     * 无星期前缀的兜底格式。
+     *
+     * 为什么需要：java.time 默认的 SMART 解析会校验 EEE 与日期是否自洽，
+     * 一旦源发出的星期写错（现实中并不罕见），整条 pubDate 直接解析失败变成 null，
+     * 文章排序沉底。而 RSS 时间戳真正有意义的是日期和时间，星期是冗余信息，
+     * 因此这里提供一组只吃日期时间的格式，在带星期格式全部失败后兜底。
+     */
+    private val rfc822WithoutDay = listOf(
+        DateTimeFormatter.ofPattern("dd MMM yyyy HH:mm:ss Z", Locale.ENGLISH),
+        DateTimeFormatter.ofPattern("d MMM yyyy HH:mm:ss Z", Locale.ENGLISH),
+        DateTimeFormatter.ofPattern("dd MMM yyyy HH:mm Z", Locale.ENGLISH),
+        DateTimeFormatter.ofPattern("d MMM yyyy HH:mm Z", Locale.ENGLISH),
+    )
+
     // ISO-8601 风格（含时区形式）
     private val iso = listOf(
         DateTimeFormatter.ISO_OFFSET_DATE_TIME,
         DateTimeFormatter.ISO_ZONED_DATE_TIME,
     )
+
+    /**
+     * 星期前缀，例如 "Sat, "。
+     * 用空格而不是正则空白类，避免 Kotlin 字符串里反斜杠二次转义带来的可读性问题。
+     */
+    private val dayPrefix = Regex("^[A-Za-z]{2,9}, *")
 
     fun parse(raw: String?): Long? {
         if (raw.isNullOrBlank()) return null
@@ -39,6 +60,18 @@ object DateParser {
             try {
                 return ZonedDateTime.parse(s, fmt).toInstant().toEpochMilli()
             } catch (_: DateTimeParseException) {
+            }
+        }
+        // 带星期的格式全失败 → 剥掉星期前缀，再试不带星期的同构格式（容忍源写错星期）。
+        // 必须先剥离：rfc822WithoutDay 的 pattern 从 dd 开始，不剥的话输入里残留的
+        // "Sat, " 会让解析在起始位置就失败，兜底等于没写。
+        val withoutDay = s.replace(dayPrefix, "")
+        if (withoutDay != s) {
+            for (fmt in rfc822WithoutDay) {
+                try {
+                    return ZonedDateTime.parse(withoutDay, fmt).toInstant().toEpochMilli()
+                } catch (_: DateTimeParseException) {
+                }
             }
         }
         for (fmt in iso) {

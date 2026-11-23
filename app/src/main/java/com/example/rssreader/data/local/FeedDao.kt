@@ -28,6 +28,15 @@ interface FeedDao {
     suspend fun count(): Int
 
     /**
+     * 按 URL 查重：同一条订阅不允许加两次。
+     * 为什么在应用层查而不是只靠 schema 唯一索引：加索引要升数据库版本写迁移，
+     * 开发期迁移出错就是启动即崩溃；这里用一次索引查询换来等价效果，风险为零。
+     * （已记录为已知限制：生产环境应当在 schema 层兜底。）
+     */
+    @Query("SELECT * FROM feeds WHERE url = :url LIMIT 1")
+    suspend fun findByUrl(url: String): FeedEntity?
+
+    /**
      * 同步状态回写：时间、逐源错误、条件请求凭证一次更新。
      * 调用方必须用 NonCancellable 包裹（见 FeedRepository），外层协程取消时也不能丢状态。
      */
