@@ -8,6 +8,10 @@ lifecycle = "2.11.0"
 activityCompose = "1.8.0"
 coroutines = "1.10.2"
 room = "2.8.5"
+# 2026-11-23 实查 Google Maven（androidx/navigation/navigation-compose/maven-metadata.xml）：
+# <release>2.10.2</release>，group-index 中也没有更高的 2.11.x，故 2.10.2 是当时最新稳定版。
+# 注意：Navigation 不归 Compose BOM 管，BOM 里查不到它的版本，必须自己写死。
+navigation = "2.10.2"
 # 2026-11-22 实查 Maven Central：最新稳定版（5.x 尚在 alpha.16）
 okhttp = "4.12.0"
 # 2026-11-22 实查 Maven Central：6.0.10 为最新（不存在 6.2.0）
@@ -31,6 +35,8 @@ androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "u
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
 # 新版 material3 不再传递依赖图标库，需要显式引入（版本随 Compose BOM）
 androidx-compose-material-icons-core = { group = "androidx.compose.material", name = "material-icons-core" }
+# 独立版本号（见上方 navigation 的注释），不能像 material3 那样省略 version
+androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigation" }
 androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
 androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
 androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
